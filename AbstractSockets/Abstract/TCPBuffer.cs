@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace AbstractSockets.Abstract
 {
@@ -39,7 +38,7 @@ namespace AbstractSockets.Abstract
                 if (buffer.Length >= 4 + packetSize && packetSize > 0)
                 {
                     byte[] payload = new byte[packetSize];
-                    Buffer.BlockCopy(buffer, 0, payload, 0, packetSize);
+                    Buffer.BlockCopy(buffer, 4, payload, 0, packetSize);
 
                     int newSize = buffer.Length - 4 - packetSize;
                     temp = new byte[newSize];

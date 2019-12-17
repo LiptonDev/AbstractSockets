@@ -3,5 +3,5 @@ using AbstractSockets.Enums;
 
 namespace AbstractSockets.Delegates
 {
-    public delegate void AbstractStreamOnStopped<T>(IAbstractStream<T> stream, NetStoppedReason reason);
+    public delegate void StreamOnStopped<T>(IAbstractStream<T> stream, NetStoppedReason reason);
 }

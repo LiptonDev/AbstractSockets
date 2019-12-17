@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace AbstractSockets.Abstract
 {
@@ -16,27 +17,27 @@ namespace AbstractSockets.Abstract
         /// <summary>
         /// Buffer size.
         /// </summary>
-        const int BufferSize = 10 * 1024; //10 KB
+        const int BufferSize = 100_000_000; //10 KB
 
         /// <summary>
         /// Raised when stream is started.
         /// </summary>
-        public event AbstractStreamOnStarted<T> OnStarted;
+        public event StreamOnStarted<T> OnStarted;
 
         /// <summary>
         /// Raised when stream was stopped.
         /// </summary>
-        public event AbstractStreamOnStopped<T> OnStopped;
+        public event StreamOnStopped<T> OnStopped;
 
         /// <summary>
         /// Raised when stream received new data.
         /// </summary>
-        public event AbstractStreamOnReceived<T> OnReceived;
+        public event StreamOnReceived<T> OnReceived;
 
         /// <summary>
         /// Unique GUID of stream.
         /// </summary>
-        public Guid Guid { get; }
+        public Guid Guid { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether the stream is active.
@@ -63,15 +64,41 @@ namespace AbstractSockets.Abstract
         /// </summary>
         TCPBuffer buffer;
 
+        bool isServerStream;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="networkStream">TCP stream.</param>
         /// <param name="endPoint">Endpoint.</param>
-        public AbstractStream(NetworkStream networkStream, EndPoint endPoint)
+        public AbstractStream(NetworkStream networkStream, EndPoint endPoint, bool isServerStream)
         {
             stream = networkStream;
             EndPoint = endPoint;
+            buffer = new TCPBuffer();
+
+            this.isServerStream = isServerStream;
+        }
+
+        /// <summary>
+        /// Send GUID to client.
+        /// </summary>
+        private async Task SendGuidToClient()
+        {
+            Guid = GuidHelper.GetGuid();
+
+            await stream.WriteAsync(Guid.ToByteArray(), 0, 16);
+        }
+
+        /// <summary>
+        /// Get GUID from server.
+        /// </summary>
+        private async Task RecvGuidFromServer()
+        {
+            var guid = new byte[16];
+            await stream.ReadAsync(guid, 0, 16);
+
+            Guid = new Guid(guid);
         }
 
         /// <summary>
@@ -85,18 +112,24 @@ namespace AbstractSockets.Abstract
         /// </summary>
         /// <param name="data">Data.</param>
         /// <returns></returns>
-        public abstract bool Send(T data);
+        public abstract Task<bool> SendAsync(T data);
 
         /// <summary>
         /// Starts the stream.
         /// </summary>
-        public void Start()
+        public async void Start()
         {
             if (IsActive)
                 return;
 
+            if (isServerStream)
+                await SendGuidToClient();
+            else await RecvGuidFromServer();
+
             receiveThread = new Thread(new ThreadStart(Receive));
             receiveThread.Start();
+
+            IsActive = true;
 
             OnStarted?.Invoke(this);
         }
@@ -122,14 +155,16 @@ namespace AbstractSockets.Abstract
             stream.Dispose();
 
             OnStopped?.Invoke(this, reason);
+
+            GuidHelper.RemoveGuid(Guid);
         }
 
 
         /// <summary>
         /// Sends a raw byte array to the stream.
         /// </summary>
-        /// <param name="data"></param>
-        protected bool SendRaw(byte[] data)
+        /// <param name="data">Raw bytes.</param>
+        protected async Task<bool> SendRawAsync(byte[] data)
         {
             if (!IsActive || !stream.CanWrite)
                 return false;
@@ -137,7 +172,7 @@ namespace AbstractSockets.Abstract
             try
             {
                 var bytes = buffer.GetPayload(data);
-                stream.Write(bytes, 0, bytes.Length);
+                await stream.WriteAsync(bytes, 0, bytes.Length);
 
                 return true;
             }
@@ -148,6 +183,9 @@ namespace AbstractSockets.Abstract
             }
         }
 
+        /// <summary>
+        /// Receiving data from stream.
+        /// </summary>
         private void Receive()
         {
             while (IsActive && stream.CanRead)
@@ -190,6 +228,10 @@ namespace AbstractSockets.Abstract
             Stop(NetStoppedReason.Manually);
         }
 
+        /// <summary>
+        /// Raises the OnReceived event.
+        /// </summary>
+        /// <param name="data">The data associated with the event.</param>
         protected void RaiseOnReceived(T data)
         {
             OnReceived?.Invoke(this, data);
