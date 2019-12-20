@@ -33,9 +33,9 @@ namespace ExampleByteServer
             Console.WriteLine($"{guid} - Disconnected!");
         }
 
-        private static void Server_OnClientConnected(IAbstractServer<byte[]> abstractServer, Guid guid)
+        private static void Server_OnClientConnected(IAbstractServer<byte[]> abstractServer, IAbstractStream<byte[]> stream)
         {
-            Console.WriteLine($"{guid} - Connected!");
+            Console.WriteLine($"{stream.Guid} - Connected!");
         }
 
         private static void Server_OnException(IAbstractServer<byte[]> abstractServer, Exception exception)
@@ -43,11 +43,11 @@ namespace ExampleByteServer
             Console.WriteLine($"Exception: {exception}");
         }
 
-        private static async void Server_OnDataReceived(IAbstractServer<byte[]> abstractServer, Guid guid, byte[] data)
+        private static async void Server_OnDataReceived(IAbstractServer<byte[]> abstractServer, IAbstractStream<byte[]> stream, byte[] data)
         {
-            Console.WriteLine($"Recevied {data.Length} bytes from {guid}");
+            Console.WriteLine($"Recevied {data.Length} bytes from {stream.Guid}");
 
-            await abstractServer.Streams[guid].SendAsync(data);
+            await abstractServer.DispatchAllAsync(data);
         }
 
         private static void Server_OnStopped(IAbstractServer<byte[]> abstractServer, NetStoppedReason reason)
