@@ -3,5 +3,5 @@ using System;
 
 namespace AbstractSockets.Delegates
 {
-    public delegate void ServerOnClientConnected<T>(IAbstractServer<T> abstractServer, Guid guid);
+    public delegate void ServerOnClientConnected<T>(IAbstractServer<T> abstractServer, IAbstractStream<T> stream);
 }
