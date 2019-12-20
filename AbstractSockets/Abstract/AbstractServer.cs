@@ -13,8 +13,15 @@ namespace AbstractSockets.Abstract
     /// <summary>
     /// Abstract class for TCP server.
     /// </summary>
-    public abstract class AbstractServer<T> : IAbstractServer<T>
+    public abstract class AbstractServer<T> : StreamCreator<T>, IAbstractServer<T>
     {
+        #region protected vars
+        protected List<Guid> clients;
+        protected Dictionary<Guid, IAbstractStream<T>> streams;
+        protected TcpListener listener;
+        #endregion
+
+        #region Events
         /// <summary>
         /// Raised when the server is started.
         /// </summary>
@@ -44,11 +51,9 @@ namespace AbstractSockets.Abstract
         /// Raised when data is received from a client.
         /// </summary>
         public event ServerOnDataReceived<T> OnDataReceived;
+        #endregion
 
-        protected List<Guid> clients;
-        protected Dictionary<Guid, IAbstractStream<T>> streams;
-        protected TcpListener listener;
-
+        #region Public properties
         /// <summary>
         /// Gets the listening address.
         /// </summary>
@@ -73,6 +78,7 @@ namespace AbstractSockets.Abstract
         /// Gets a readonly dictionary of client streams.
         /// </summary>
         public ReadOnlyDictionary<Guid, IAbstractStream<T>> Streams => new ReadOnlyDictionary<Guid, IAbstractStream<T>>(streams);
+        #endregion
 
         /// <summary>
         /// Constructor.
@@ -83,6 +89,7 @@ namespace AbstractSockets.Abstract
             streams = new Dictionary<Guid, IAbstractStream<T>>();
         }
 
+        #region Start & AcceptClients region
         /// <summary>
         /// Starts the server on the specified port and address.
         /// </summary>
@@ -141,7 +148,9 @@ namespace AbstractSockets.Abstract
                 stream.Start();
             }
         }
+        #endregion
 
+        #region Stream events
         private void Stream_OnReceived(IAbstractStream<T> stream, T data)
         {
             OnDataReceived?.Invoke(this, stream, data);
@@ -160,9 +169,15 @@ namespace AbstractSockets.Abstract
             clients.Remove(stream.Guid);
             streams.Remove(stream.Guid);
 
+            stream.OnReceived -= Stream_OnReceived;
+            stream.OnStarted -= Stream_OnStarted;
+            stream.OnStopped -= Stream_OnStopped;
+
             OnClientDisconnected?.Invoke(this, stream.Guid, reason);
         }
+        #endregion
 
+        #region Stop & Dispose region
         /// <summary>
         /// Stops the server manually.
         /// </summary>
@@ -191,7 +206,9 @@ namespace AbstractSockets.Abstract
             Port = 0;
             IsOnline = false;
         }
+        #endregion
 
+        #region Disconnect region
         /// <summary>
         /// Disconnect a client.
         /// </summary>
@@ -214,7 +231,9 @@ namespace AbstractSockets.Abstract
                 streams[clients[0]].Dispose();
             }
         }
+        #endregion
 
+        #region Dispatch region
         /// <summary>
         /// Dispatch data to a single client.
         /// </summary>
@@ -261,7 +280,6 @@ namespace AbstractSockets.Abstract
 
             return res.All(x => x);
         }
-
-        protected abstract IAbstractStream<T> CreateStream(NetworkStream ns, EndPoint ep);
+        #endregion
     }
 }

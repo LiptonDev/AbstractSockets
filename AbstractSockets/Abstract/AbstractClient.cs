@@ -1,13 +1,13 @@
 ﻿using AbstractSockets.Delegates;
 using AbstractSockets.Enums;
-using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace AbstractSockets.Abstract
 {
-    public abstract class AbstractClient<T> : IAbstractClient<T>
+    public abstract class AbstractClient<T> : StreamCreator<T>, IAbstractClient<T>
     {
+        #region Events
         /// <summary>
         /// Raised when the connection is established succesfully.
         /// </summary>
@@ -22,7 +22,9 @@ namespace AbstractSockets.Abstract
         /// Raised when data has been received.
         /// </summary>
         public event ClientOnReceived<T> OnReceived;
+        #endregion
 
+        #region Public properties
         /// <summary>
         /// Gets the remote host name.
         /// </summary>
@@ -37,12 +39,16 @@ namespace AbstractSockets.Abstract
         /// Gets a value indicating whether the client is connected.
         /// </summary>
         public bool IsConnected { get; private set; }
+        #endregion
 
+        #region Private fields
         /// <summary>
         /// Client stream.
         /// </summary>
         IAbstractStream<T> stream;
+        #endregion
 
+        #region Connect region
         /// <summary>
         /// Connects to the server on the specified host and port.
         /// </summary>
@@ -72,21 +78,6 @@ namespace AbstractSockets.Abstract
             stream.Start();
         }
 
-        private void Stream_OnReceived(IAbstractStream<T> stream, T data)
-        {
-            OnReceived?.Invoke(this, data);
-        }
-
-        private void Stream_OnStopped(IAbstractStream<T> stream, NetStoppedReason reason)
-        {
-            Disconnect(reason);
-        }
-
-        private void Stream_OnStarted(IAbstractStream<T> stream)
-        {
-            OnConnected?.Invoke(this);
-        }
-
         /// <summary>
         /// Connects to the server, returns a bool indicating whether the attempt failed or succeeded.
         /// </summary>
@@ -105,7 +96,26 @@ namespace AbstractSockets.Abstract
                 return false;
             }
         }
+        #endregion
 
+        #region Stream events
+        private void Stream_OnReceived(IAbstractStream<T> stream, T data)
+        {
+            OnReceived?.Invoke(this, data);
+        }
+
+        private void Stream_OnStopped(IAbstractStream<T> stream, NetStoppedReason reason)
+        {
+            Disconnect(reason);
+        }
+
+        private void Stream_OnStarted(IAbstractStream<T> stream)
+        {
+            OnConnected?.Invoke(this);
+        }
+        #endregion
+
+        #region Disconnect & Dispose region
         /// <summary>
         /// Disconnects from the server.
         /// </summary>
@@ -124,6 +134,10 @@ namespace AbstractSockets.Abstract
             IsConnected = false;
 
             OnDisconnected?.Invoke(this, reason);
+
+            stream.OnReceived -= Stream_OnReceived;
+            stream.OnStarted -= Stream_OnStarted;
+            stream.OnStopped -= Stream_OnStopped;
         }
 
         /// <summary>
@@ -136,7 +150,9 @@ namespace AbstractSockets.Abstract
             RemoteHost = null;
             RemotePort = 0;
         }
+        #endregion
 
+        #region Send region
         /// <summary>
         /// Sends the provided data to the server.
         /// </summary>
@@ -145,7 +161,6 @@ namespace AbstractSockets.Abstract
         {
             return await stream.SendAsync(data);
         }
-
-        protected abstract IAbstractStream<T> CreateStream(NetworkStream ns, EndPoint ep);
+        #endregion
     }
 }

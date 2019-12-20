@@ -40,6 +40,7 @@
     <Compile Include="Abstract\IAbstractClient.cs" />
     <Compile Include="Abstract\IAbstractServer.cs" />
     <Compile Include="Abstract\IAbstractStream.cs" />
+    <Compile Include="Abstract\StreamCreator.cs" />
     <Compile Include="Abstract\TCPBuffer.cs" />
     <Compile Include="Base\Aes\AesClient.cs" />
     <Compile Include="Base\Aes\AesServer.cs" />

@@ -14,11 +14,14 @@ namespace AbstractSockets.Abstract
     /// </summary>
     public abstract class AbstractStream<T> : IAbstractStream<T>
     {
+        #region Const region
         /// <summary>
         /// Buffer size.
         /// </summary>
         const int BufferSize = 10 * 1024; //10 KB
+        #endregion
 
+        #region Events
         /// <summary>
         /// Raised when stream is started.
         /// </summary>
@@ -33,7 +36,9 @@ namespace AbstractSockets.Abstract
         /// Raised when stream received new data.
         /// </summary>
         public event StreamOnReceived<T> OnReceived;
+        #endregion
 
+        #region Public properties
         /// <summary>
         /// Unique GUID of stream.
         /// </summary>
@@ -48,7 +53,9 @@ namespace AbstractSockets.Abstract
         /// Gets the remote endpoint.
         /// </summary>
         public EndPoint EndPoint { get; private set; }
+        #endregion
 
+        #region Private fields
         /// <summary>
         /// Tcp stream.
         /// </summary>
@@ -65,6 +72,7 @@ namespace AbstractSockets.Abstract
         TCPBuffer buffer;
 
         protected bool IsServerStream { get; private set; }
+        #endregion
 
         /// <summary>
         /// Constructor.
@@ -80,6 +88,22 @@ namespace AbstractSockets.Abstract
             IsServerStream = isServerStream;
         }
 
+        #region Abstract methods
+        /// <summary>
+        /// Should be implemented for handling raw bytes received from the stream.
+        /// </summary>
+        /// <param name="data">Raw data.</param>
+        protected abstract T ReceivedRaw(byte[] data);
+
+        /// <summary>
+        /// Sends strictly typed data to the stream.
+        /// </summary>
+        /// <param name="data">Data.</param>
+        /// <returns></returns>
+        public abstract Task<bool> SendAsync(T data);
+        #endregion
+
+        #region Start region
         /// <summary>
         /// Send GUID to client.
         /// </summary>
@@ -100,19 +124,6 @@ namespace AbstractSockets.Abstract
 
             Guid = new Guid(guid);
         }
-
-        /// <summary>
-        /// Should be implemented for handling raw bytes received from the stream.
-        /// </summary>
-        /// <param name="data">Raw data.</param>
-        protected abstract T ReceivedRaw(byte[] data);
-
-        /// <summary>
-        /// Sends strictly typed data to the stream.
-        /// </summary>
-        /// <param name="data">Data.</param>
-        /// <returns></returns>
-        public abstract Task<bool> SendAsync(T data);
 
         /// <summary>
         /// Raised when stream starting.
@@ -142,7 +153,9 @@ namespace AbstractSockets.Abstract
 
             OnStarted?.Invoke(this);
         }
+        #endregion
 
+        #region Stop & Dispose region
         /// <summary>
         /// Stops the stream with a specific reason.
         /// </summary>
@@ -173,8 +186,9 @@ namespace AbstractSockets.Abstract
             stream.Dispose();
             buffer.Dispose();
         }
+        #endregion
 
-
+        #region SendRaw region
         /// <summary>
         /// Sends a raw byte array to the stream.
         /// </summary>
@@ -197,7 +211,9 @@ namespace AbstractSockets.Abstract
                 return false;
             }
         }
+        #endregion
 
+        #region Recive region
         /// <summary>
         /// Receiving data from stream.
         /// </summary>
@@ -242,5 +258,6 @@ namespace AbstractSockets.Abstract
 
             Stop(NetStoppedReason.Manually);
         }
+        #endregion
     }
 }
