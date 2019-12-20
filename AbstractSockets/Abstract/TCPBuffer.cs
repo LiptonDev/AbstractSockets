@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AbstractSockets.Abstract
 {
-    class TCPBuffer
+    class TCPBuffer : IDisposable
     {
         byte[] buffer;
 
@@ -50,6 +50,11 @@ namespace AbstractSockets.Abstract
                 }
                 else yield break;
             }
+        }
+
+        public void Dispose()
+        {
+            buffer = null;
         }
     }
 }

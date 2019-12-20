@@ -119,11 +119,22 @@ namespace AbstractSockets.Abstract
             if (!IsConnected)
                 return;
 
-            stream.Stop();
+            stream.Dispose();
 
             IsConnected = false;
 
             OnDisconnected?.Invoke(this, reason);
+        }
+
+        /// <summary>
+        /// Release resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Disconnect();
+
+            RemoteHost = null;
+            RemotePort = 0;
         }
 
         /// <summary>

@@ -9,7 +9,7 @@ namespace AbstractSockets.Abstract
     /// Abstract stream interface.
     /// </summary>
     /// <typeparam name="T">Type of data.</typeparam>
-    public interface IAbstractStream<T>
+    public interface IAbstractStream<T> : IDisposable
     {
         /// <summary>
         /// Raised when stream is started.
@@ -52,10 +52,5 @@ namespace AbstractSockets.Abstract
         /// Starts the stream.
         /// </summary>
         void Start();
-
-        /// <summary>
-        /// Stops the stream manually locally.
-        /// </summary>
-        void Stop();
     }
 }

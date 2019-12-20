@@ -144,7 +144,7 @@ namespace AbstractSockets.Abstract
 
         private void Stream_OnReceived(IAbstractStream<T> stream, T data)
         {
-            OnDataReceived?.Invoke(this, stream.Guid, data);
+            OnDataReceived?.Invoke(this, stream, data);
         }
 
         private void Stream_OnStarted(IAbstractStream<T> stream)
@@ -152,7 +152,7 @@ namespace AbstractSockets.Abstract
             clients.Add(stream.Guid);
             streams.Add(stream.Guid, stream);
 
-            OnClientConnected?.Invoke(this, stream.Guid);
+            OnClientConnected?.Invoke(this, stream);
         }
 
         private void Stream_OnStopped(IAbstractStream<T> stream, NetStoppedReason reason)
@@ -180,6 +180,19 @@ namespace AbstractSockets.Abstract
         }
 
         /// <summary>
+        /// Release resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Stop();
+
+            listener.Server.Dispose();
+            Address = null;
+            Port = 0;
+            IsOnline = false;
+        }
+
+        /// <summary>
         /// Disconnect a client.
         /// </summary>
         /// <param name="guid">Guid.</param>
@@ -188,7 +201,7 @@ namespace AbstractSockets.Abstract
             if (!streams.ContainsKey(guid))
                 return;
 
-            streams[guid].Stop();
+            streams[guid].Dispose();
         }
 
         /// <summary>
@@ -198,7 +211,7 @@ namespace AbstractSockets.Abstract
         {
             while (clients.Count > 0)
             {
-                streams[clients[0]].Stop();
+                streams[clients[0]].Dispose();
             }
         }
 
@@ -219,10 +232,7 @@ namespace AbstractSockets.Abstract
         /// <param name="data">Data.</param>
         public async Task<bool> DispatchToAsync(IEnumerable<Guid> guids, T data)
         {
-            var tasks = guids.AsParallel().Select(x => DispatchToAsync(x, data));
-            await Task.WhenAll(tasks);
-
-            return tasks.All(x => x.Result);
+            return await DispatchToClients(guids, data);
         }
 
         /// <summary>
@@ -231,10 +241,7 @@ namespace AbstractSockets.Abstract
         /// <param name="data">Data.</param>
         public async Task<bool> DispatchAllAsync(T data)
         {
-            var tasks = clients.AsParallel().Select(x => DispatchToAsync(x, data));
-            await Task.WhenAll(tasks);
-
-            return tasks.All(x => x.Result);
+            return await DispatchToClients(clients, data);
         }
 
         /// <summary>
@@ -244,10 +251,15 @@ namespace AbstractSockets.Abstract
         /// <param name="data">Data.</param>
         public async Task<bool> DispatchAllExceptAsync(Guid guid, T data)
         {
-            var tasks = clients.AsParallel().Where(x => x != guid).Select(x => DispatchToAsync(x, data));
-            await Task.WhenAll(tasks);
+            return await DispatchToClients(clients.Where(x => x != guid), data);
+        }
 
-            return tasks.All(x => x.Result);
+        async Task<bool> DispatchToClients(IEnumerable<Guid> guids, T data)
+        {
+            var tasks = guids.AsParallel().Select(x => DispatchToAsync(x, data));
+            var res = await Task.WhenAll(tasks);
+
+            return res.All(x => x);
         }
 
         protected abstract IAbstractStream<T> CreateStream(NetworkStream ns, EndPoint ep);

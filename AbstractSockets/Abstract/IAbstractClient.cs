@@ -1,4 +1,5 @@
 ﻿using AbstractSockets.Delegates;
+using System;
 using System.Threading.Tasks;
 
 namespace AbstractSockets.Abstract
@@ -7,7 +8,7 @@ namespace AbstractSockets.Abstract
     /// Abstract client interface.
     /// </summary>
     /// <typeparam name="T">Type of data.</typeparam>
-    public interface IAbstractClient<T>
+    public interface IAbstractClient<T> : IDisposable
     {
         /// <summary>
         /// Raised when the connection is established succesfully.

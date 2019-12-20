@@ -17,7 +17,7 @@ namespace AbstractSockets.Abstract
         /// <summary>
         /// Buffer size.
         /// </summary>
-        const int BufferSize = 100_000_000; //10 KB
+        const int BufferSize = 10 * 1024; //10 KB
 
         /// <summary>
         /// Raised when stream is started.
@@ -64,7 +64,7 @@ namespace AbstractSockets.Abstract
         /// </summary>
         TCPBuffer buffer;
 
-        bool isServerStream;
+        protected bool IsServerStream { get; private set; }
 
         /// <summary>
         /// Constructor.
@@ -77,7 +77,7 @@ namespace AbstractSockets.Abstract
             EndPoint = endPoint;
             buffer = new TCPBuffer();
 
-            this.isServerStream = isServerStream;
+            IsServerStream = isServerStream;
         }
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace AbstractSockets.Abstract
         /// Should be implemented for handling raw bytes received from the stream.
         /// </summary>
         /// <param name="data">Raw data.</param>
-        protected abstract void ReceivedRaw(byte[] data);
+        protected abstract T ReceivedRaw(byte[] data);
 
         /// <summary>
         /// Sends strictly typed data to the stream.
@@ -115,6 +115,17 @@ namespace AbstractSockets.Abstract
         public abstract Task<bool> SendAsync(T data);
 
         /// <summary>
+        /// Raised when stream starting.
+        /// </summary>
+        /// <param name="ns">Network stream.</param>
+        protected async virtual Task PreStart(NetworkStream ns)
+        {
+            if (IsServerStream)
+                await SendGuidToClient();
+            else await RecvGuidFromServer();
+        }
+
+        /// <summary>
         /// Starts the stream.
         /// </summary>
         public async void Start()
@@ -122,9 +133,7 @@ namespace AbstractSockets.Abstract
             if (IsActive)
                 return;
 
-            if (isServerStream)
-                await SendGuidToClient();
-            else await RecvGuidFromServer();
+            await PreStart(stream);
 
             receiveThread = new Thread(new ThreadStart(Receive));
             receiveThread.Start();
@@ -132,14 +141,6 @@ namespace AbstractSockets.Abstract
             IsActive = true;
 
             OnStarted?.Invoke(this);
-        }
-
-        /// <summary>
-        /// Stops the stream manually locally.
-        /// </summary>
-        public void Stop()
-        {
-            Stop(NetStoppedReason.Manually);
         }
 
         /// <summary>
@@ -152,11 +153,25 @@ namespace AbstractSockets.Abstract
                 return;
 
             IsActive = false;
-            stream.Dispose();
+            stream.Close();
 
             OnStopped?.Invoke(this, reason);
 
-            GuidHelper.RemoveGuid(Guid);
+            if (IsServerStream)
+                GuidHelper.RemoveGuid(Guid);
+        }
+
+        /// <summary>
+        /// Release resources.
+        /// </summary>
+        public virtual void Dispose()
+        {
+            Stop(NetStoppedReason.Manually);
+
+            EndPoint = null;
+            Guid = Guid.Empty;
+            stream.Dispose();
+            buffer.Dispose();
         }
 
 
@@ -222,19 +237,10 @@ namespace AbstractSockets.Abstract
                 }
 
                 foreach (var item in this.buffer.BufferProcessing(buffer))
-                    ReceivedRaw(item);
+                    OnReceived?.Invoke(this, ReceivedRaw(item));
             }
 
             Stop(NetStoppedReason.Manually);
-        }
-
-        /// <summary>
-        /// Raises the OnReceived event.
-        /// </summary>
-        /// <param name="data">The data associated with the event.</param>
-        protected void RaiseOnReceived(T data)
-        {
-            OnReceived?.Invoke(this, data);
         }
     }
 }

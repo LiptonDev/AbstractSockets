@@ -11,7 +11,7 @@ namespace AbstractSockets.Abstract
     /// Abstract server interface.
     /// </summary>
     /// <typeparam name="T">Type of data.</typeparam>
-    public interface IAbstractServer<T>
+    public interface IAbstractServer<T> : IDisposable
     {
         /// <summary>
         /// Raised when the server is started.
