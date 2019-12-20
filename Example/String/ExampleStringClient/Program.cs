@@ -1,9 +1,8 @@
 ﻿using AbstractSockets.Abstract;
+using AbstractSockets.Base.String;
 using AbstractSockets.Enums;
-using ExampleStringStream;
 using System;
-using System.Net;
-using System.Net.Sockets;
+using System.Text;
 
 namespace ExampleStringClient
 {
@@ -11,7 +10,7 @@ namespace ExampleStringClient
     {
         static void Main(string[] args)
         {
-            var client = new StringClient();
+            var client = new StringClient(Encoding.UTF8);
 
             client.OnConnected += OnConnected;
             client.OnDisconnected += OnDisconnected;
@@ -38,14 +37,6 @@ namespace ExampleStringClient
         private static void OnConnected(IAbstractClient<string> abstractClient)
         {
             Console.WriteLine("Connected");
-        }
-    }
-
-    class StringClient : AbstractClient<string>
-    {
-        protected override IAbstractStream<string> CreateStream(NetworkStream ns, EndPoint ep)
-        {
-            return new StringStream(ns, ep, false);
         }
     }
 }

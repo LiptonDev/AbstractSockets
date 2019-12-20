@@ -1,9 +1,9 @@
 ﻿using AbstractSockets.Abstract;
+using AbstractSockets.Base.String;
 using AbstractSockets.Enums;
-using ExampleStringStream;
 using System;
 using System.Net;
-using System.Net.Sockets;
+using System.Text;
 
 namespace ExampleStringServer
 {
@@ -11,7 +11,7 @@ namespace ExampleStringServer
     {
         static void Main(string[] args)
         {
-            var server = new StringServer();
+            var server = new StringServer(Encoding.UTF8);
 
             server.OnStarted += Server_OnStarted;
             server.OnStopped += Server_OnStopped;
@@ -34,9 +34,9 @@ namespace ExampleStringServer
             Console.WriteLine($"{guid} - Disconnected!");
         }
 
-        private static void Server_OnClientConnected(IAbstractServer<string> abstractServer, Guid guid)
+        private static void Server_OnClientConnected(IAbstractServer<string> abstractServer, IAbstractStream<string> stream)
         {
-            Console.WriteLine($"{guid} - Connected!");
+            Console.WriteLine($"{stream.Guid} - Connected!");
         }
 
         private static void Server_OnException(IAbstractServer<string> abstractServer, Exception exception)
@@ -44,11 +44,11 @@ namespace ExampleStringServer
             Console.WriteLine($"Exception: {exception}");
         }
 
-        private static async void Server_OnDataReceived(IAbstractServer<string> abstractServer, Guid guid, string data)
+        private static async void Server_OnDataReceived(IAbstractServer<string> abstractServer, IAbstractStream<string> stream, string data)
         {
-            Console.WriteLine($"Recevied \"{data}\" from {guid}");
+            Console.WriteLine($"Recevied \"{data}\" from {stream.Guid}");
 
-            await abstractServer.Streams[guid].SendAsync(data);
+            await abstractServer.DispatchAllAsync(data);
         }
 
         private static void Server_OnStopped(IAbstractServer<string> abstractServer, NetStoppedReason reason)
@@ -59,14 +59,6 @@ namespace ExampleStringServer
         private static void Server_OnStarted(IAbstractServer<string> abstractServer)
         {
             Console.WriteLine("Server started");
-        }
-    }
-
-    class StringServer : AbstractServer<string>
-    {
-        protected override IAbstractStream<string> CreateStream(NetworkStream ns, EndPoint ep)
-        {
-            return new StringStream(ns, ep, true);
         }
     }
 }

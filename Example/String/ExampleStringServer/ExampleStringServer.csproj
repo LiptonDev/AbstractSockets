@@ -47,10 +47,6 @@
       <Project>{FB6F6658-535D-4963-A96F-0046B8F7DD8E}</Project>
       <Name>AbstractSockets</Name>
     </ProjectReference>
-    <ProjectReference Include="..\ExampleStringStream\ExampleStringStream.csproj">
-      <Project>{134C88BC-21E0-4675-84F5-143F9363E36C}</Project>
-      <Name>ExampleStringStream</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
