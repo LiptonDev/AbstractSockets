@@ -41,9 +41,15 @@
     <Compile Include="Abstract\IAbstractServer.cs" />
     <Compile Include="Abstract\IAbstractStream.cs" />
     <Compile Include="Abstract\TCPBuffer.cs" />
+    <Compile Include="Base\Aes\AesClient.cs" />
+    <Compile Include="Base\Aes\AesServer.cs" />
+    <Compile Include="Base\Aes\AesStream.cs" />
     <Compile Include="Base\Byte\ByteClient.cs" />
     <Compile Include="Base\Byte\ByteServer.cs" />
     <Compile Include="Base\Byte\ByteStream.cs" />
+    <Compile Include="Base\String\StringClient.cs" />
+    <Compile Include="Base\String\StringServer.cs" />
+    <Compile Include="Base\String\StringStream.cs" />
     <Compile Include="Delegates\ClientOnConnected.cs" />
     <Compile Include="Delegates\ClientOnDisconnected.cs" />
     <Compile Include="Delegates\ClientOnReceived.cs" />
