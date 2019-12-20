@@ -17,9 +17,9 @@ namespace AbstractSockets.Base
             return await SendRawAsync(data);
         }
 
-        protected override void ReceivedRaw(byte[] data)
+        protected override byte[] ReceivedRaw(byte[] data)
         {
-            RaiseOnReceived(data);
+            return data;
         }
     }
 }
